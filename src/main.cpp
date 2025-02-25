@@ -16,6 +16,7 @@
 void setup() {
     Serial.begin(9600);
     Serial.setTimeout(0);
+    Wire.begin();
 
 }
 
