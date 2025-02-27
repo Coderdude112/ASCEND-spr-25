@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <SensirionI2cScd4x.h>
 
 // ---- //
 /* Vars */
