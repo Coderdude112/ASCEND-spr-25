@@ -3,6 +3,7 @@
 // ------- //
 
 #include <Arduino.h>
+#include <SensirionI2cScd4x.h>
 #include <Wire.h>
 #include <Adafruit_GPS.h>
 
@@ -18,6 +19,12 @@ Adafruit_GPS GPS(&Wire);
 uint32_t timer = millis();
 char c;
 
+SensirionI2cScd4x scd41;
+uint16_t scd41data;
+uint16_t co2Concentration = 0; 
+float temperature = 0.0;
+float relativeHumidity = 0.0;
+
 // ---- //
 /* Main */
 // ---- //
@@ -25,6 +32,13 @@ char c;
 void setup() {
     Serial.begin(9600);
     Serial.setTimeout(0);
+    Wire.begin();
+    scd41.begin(Wire, SCD41_I2C_ADDR_62);
+    int scd41good = scd41.wakeUp();
+    if (scd41good == 0) {
+        Serial.println("Error waking up the SCD41 sensor.");
+    }
+    
 
   //GPS Code
     //while (!Serial);
@@ -56,5 +70,5 @@ void setup() {
 }
 
 void loop() {
-
+    
 }
