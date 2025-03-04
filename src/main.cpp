@@ -8,6 +8,7 @@
 #include <SD.h>
 #include <Adafruit_BNO055.h>
 #include <Adafruit_GPS.h>
+#include <ISM330DLC_ACC_GYRO_Driver.h>
 
 // ---- //
 /* Vars */
@@ -29,6 +30,8 @@ uint16_t co2Concentration = 0;
 float temperature = 0.0;
 float relativeHumidity = 0.0;
 
+
+
 // ---- //
 /* Main */
 // ---- //
@@ -42,7 +45,32 @@ void setup() {
     if (scd41good == 0) {
         Serial.println("Error waking up the SCD41 sensor.");
     }
-    
+  
+    // ISM330DLC_ACC_GYRO
+  // This sensor uses I2C or SPI to communicate. For I2C it is then required to create a 
+  // TwoWire interface before accessing to the sensors:
+  TwoWire dev_i2c(I2C_SDA, I2C_SCL);  
+  dev_i2c.begin();
+  
+  // For SPI it is then required to create a SPI interface before accessing to the sensors:
+  SPIClass dev_spi(SPI_MOSI, SPI_MISO, SPI_SCK);  
+  dev_spi.begin();
+
+  // An instance can be created and enabled when the I2C bus is used following the procedure below:
+  ISM330DLCSensor AccGyr(&dev_i2c);
+  AccGyr.begin();
+  AccGyr.Enable_X();  
+  AccGyr.Enable_G();
+  
+  // An instance can be created and enabled when the SPI bus is used following the procedure below:
+  ISM330DLCSensor AccGyr(&dev_spi, CS_PIN);
+  AccGyr.begin();	
+  AccGyr.Enable_X();  
+  AccGyr.Enable_G();
+
+  // Read accelerometer and gyroscope.
+  int32_t accelerometer[3];
+  int32_t gyroscope[3];
 
     /* Logging onto SD */
     // Initialize the SD card //
