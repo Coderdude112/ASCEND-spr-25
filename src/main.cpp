@@ -9,6 +9,7 @@
 #include <Adafruit_BNO055.h>
 #include <Adafruit_GPS.h>
 #include <ISM330DLC_ACC_GYRO_Driver.h>
+#include <Adafruit_AS7341.h>
 
 // ---- //
 /* Vars */
@@ -30,7 +31,7 @@ uint16_t co2Concentration = 0;
 float temperature = 0.0;
 float relativeHumidity = 0.0;
 
-
+Adafruit_AS7341 as7341;
 
 // ---- //
 /* Main */
@@ -129,6 +130,15 @@ void setup() {
     
     // Ask for firmware version
     GPS.println(PMTK_Q_RELEASE);
+    
+    //AS7341
+    if (!as7341.begin()){
+      Serial.println("Could not find AS7341");
+      while (1) { delay(10); }
+    }
+    as7341.setATIME(100);
+    as7341.setASTEP(999);
+    as7341.setGain(AS7341_GAIN_256X);
 }
 
 void loop() {
