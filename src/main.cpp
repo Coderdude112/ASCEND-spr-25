@@ -5,12 +5,17 @@
 #include <Arduino.h>
 #include <SensirionI2cScd4x.h>
 #include <Wire.h>
+#include <SD.h>
+#include <Adafruit_BNO055.h>
 #include <Adafruit_GPS.h>
+#include <ISM330DLC_ACC_GYRO_Driver.h>
 
 // ---- //
 /* Vars */
 // ---- //
 
+File dataFile; //Instance of the File class
+Adafruit_BNO055 bno; //Instance of the Adafruit_BNO055 class
 //GPS Code
 Adafruit_GPS GPS(&Wire);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
@@ -25,6 +30,8 @@ uint16_t co2Concentration = 0;
 float temperature = 0.0;
 float relativeHumidity = 0.0;
 
+
+
 // ---- //
 /* Main */
 // ---- //
@@ -38,8 +45,63 @@ void setup() {
     if (scd41good == 0) {
         Serial.println("Error waking up the SCD41 sensor.");
     }
-    
+  
+    // ISM330DLC_ACC_GYRO
+  // This sensor uses I2C or SPI to communicate. For I2C it is then required to create a 
+  // TwoWire interface before accessing to the sensors:
+  TwoWire dev_i2c(I2C_SDA, I2C_SCL);  
+  dev_i2c.begin();
+  
+  // For SPI it is then required to create a SPI interface before accessing to the sensors:
+  SPIClass dev_spi(SPI_MOSI, SPI_MISO, SPI_SCK);  
+  dev_spi.begin();
 
+  // An instance can be created and enabled when the I2C bus is used following the procedure below:
+  ISM330DLCSensor AccGyr(&dev_i2c);
+  AccGyr.begin();
+  AccGyr.Enable_X();  
+  AccGyr.Enable_G();
+  
+  // An instance can be created and enabled when the SPI bus is used following the procedure below:
+  ISM330DLCSensor AccGyr(&dev_spi, CS_PIN);
+  AccGyr.begin();	
+  AccGyr.Enable_X();  
+  AccGyr.Enable_G();
+
+  // Read accelerometer and gyroscope.
+  int32_t accelerometer[3];
+  int32_t gyroscope[3];
+
+    /* Logging onto SD */
+    // Initialize the SD card //
+    Serial.print("Initializing SD card...");
+    if(!SD.begin()){
+        Serial.println("Initialization failed!");
+        while(1);
+    }
+    // Create a new file with a different name if the file already exists //
+    int fileIndex = 1;
+    String dataFileName = "flightdata.csv";
+    while (SD.exists(dataFileName)){
+        dataFileName = "flightdata" + String(fileIndex) + ".csv";
+        fileIndex++;
+    }
+    // Open the file //
+    Serial.println("Initialization successful.");
+    dataFile = SD.open("flightdata.csv", FILE_WRITE);
+    if(dataFile){
+        Serial.print("Writing to flightdata.csv...");
+        dataFile.println("X, Y, Z, qW, qX, qY, qZ, Temp"); //Printing out the headers
+      }
+      else{
+        Serial.println("Error opening flightdata.csv");
+      }
+
+    /* Initialize the BNO055 */
+    if(!bno.begin()){
+        Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
+        while(1);
+    }
   //GPS Code
     //while (!Serial);
 
@@ -71,4 +133,61 @@ void setup() {
 
 void loop() {
     
+    // Get the Euler angles, quaternion, and temperature //
+    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    imu::Quaternion quat = bno.getQuat();
+    int8_t temp = bno.getTemp();
+
+    // Print the data to the .csv file //
+    dataFile = SD.open("flightdata.csv", FILE_WRITE);
+    if(dataFile){
+        dataFile.print(euler.x()); dataFile.print(", ");
+        dataFile.print(euler.y());
+        dataFile.print(", ");
+        dataFile.print(euler.z());
+        dataFile.print(", ");
+        dataFile.print(quat.w());
+        dataFile.print(", ");
+        dataFile.print(quat.x());
+        dataFile.print(", ");
+        dataFile.print(quat.y());
+        dataFile.print(", ");
+        dataFile.print(quat.z());
+        dataFile.print(", ");
+        dataFile.print(temp);
+        dataFile.println();
+        dataFile.close();
+    }
+    else{
+        Serial.println("Error opening flightdata.csv");
+    }
+    
+    /* Testing Code for BNO055 */
+    // Absolute Orientation (Euler Vector, 100Hz) //
+    Serial.print("X: ");
+    Serial.print(euler.x());
+    Serial.print(" Y: ");
+    Serial.print(euler.y());
+    Serial.print(" Z: ");
+    Serial.print(euler.z());
+    Serial.println("");
+   
+    // Absolute Orientation (Quaterion, 100Hz) //
+    Serial.print("qW: ");
+    Serial.print(quat.w(), 4);
+    Serial.print(" qX: ");
+    Serial.print(quat.x(), 4);
+    Serial.print(" qY: ");
+    Serial.print(quat.y(), 4);
+    Serial.print(" qZ: ");
+    Serial.print(quat.z(), 4);
+    Serial.println("");
+
+    // Temperature (1Hz) //
+    Serial.print("Current Temperature: ");
+    Serial.print(temp);
+    Serial.println(" C");
+    Serial.println("");
+
+    delay(100);
 }
