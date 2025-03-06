@@ -31,6 +31,12 @@ float temperature = 0.0;
 float relativeHumidity = 0.0;
 
 
+imu::Vector<3> euler; // Euler angles (degrees)
+imu::Quaternion quat; // Quaternion (w, x, y, z)
+uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
+int8_t temp; // Temperature (Celsius)
+sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
+float x, y, z; // Variables to store the x, y, z values of the sensor data
 void printEvent(File &file, sensors_event_t* event); // Function to print the sensor data to the .csv file
 
 // ---- //
@@ -130,6 +136,13 @@ void setup() {
     
     // Ask for firmware version
     GPS.println(PMTK_Q_RELEASE);
+
+     /* Initialize the BNO055 */
+    if(!bno.begin()){
+        Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
+        while(1);
+    }
+
     /* Logging onto SD */ //https://docs.arduino.cc/learn/programming/sd-guide/
     // Initialize the SD card //
     Serial.print("Initializing SD card...");
@@ -160,11 +173,26 @@ void setup() {
 }
 
 void loop() {
-    
-    // Get the Euler angles, quaternion, and temperature //
-    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    imu::Quaternion quat = bno.getQuat();
-    int8_t temp = bno.getTemp();
+    // Get data from BNO055 //
+    euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER); // Euler angles (degrees)
+    quat = bno.getQuat(); // Quaternion (w, x, y, z)
+    temp = bno.getTemp(); // Temperature (Celsius)
+    // Get Sensor Events
+    bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
+    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+    bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
+    bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+    bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+    // - VECTOR_ACCELEROMETER - m/s^2
+    // - VECTOR_MAGNETOMETER  - uT
+    // - VECTOR_GYROSCOPE     - rad/s
+    // - VECTOR_EULER         - degrees
+    // - VECTOR_LINEARACCEL   - m/s^2
+    // - VECTOR_GRAVITY       - m/s^2
+
+    // Get calibration status for each sensor //
+    bno.getCalibration(&systemCal, &gyro, &accel, &mag);
 
     // Print the data to the .csv file //
     // dataFile is already open in setup, no need to reopen it
@@ -224,4 +252,63 @@ void loop() {
     Serial.println("");
 
     delay(100);
+}
+
+// ---- //
+/* Functions */
+// ---- //
+
+void printEvent(File &file, sensors_event_t* event){
+    if(event->type == SENSOR_TYPE_ACCELEROMETER){
+        file.print("Accleration (): ");
+        x = event->acceleration.x;
+        y = event->acceleration.y;
+        z = event->acceleration.z;
+    }
+    else if(event->type == SENSOR_TYPE_ORIENTATION){
+        file.print("Orientation (): ");
+        x = event->orientation.x;
+        y = event->orientation.y;
+        z = event->orientation.z;
+    }
+    else if(event->type == SENSOR_TYPE_MAGNETIC_FIELD){
+        file.print("Magnetometer (uT): ");
+        x = event->magnetic.x;
+        y = event->magnetic.y;
+        z = event->magnetic.z;
+    }
+    else if(event->type == SENSOR_TYPE_GYROSCOPE){
+        file.print("Gyroscope (rad/s): ");
+        x = event->gyro.x;
+        y = event->gyro.y;
+        z = event->gyro.z;
+    }
+    else if(event->type == SENSOR_TYPE_ROTATION_VECTOR){
+        file.print("Rotation Vector (): ");
+        x = event->gyro.x;
+        y = event->gyro.y;
+        z = event->gyro.z;
+    }
+    else if(event->type == SENSOR_TYPE_LINEAR_ACCELERATION){
+        file.print("Linear Acceleration (m/s^2): ");
+        x = event->acceleration.x;
+        y = event->acceleration.y;
+        z = event->acceleration.z;
+    }
+    else if(event->type == SENSOR_TYPE_GRAVITY){
+        file.print("Gravity (m/s^2):");
+        x = event->acceleration.x;
+        y = event->acceleration.y;
+        z = event->acceleration.z;
+    }
+    else{
+        file.print("Unk:");
+    }
+    
+      file.print("\tx = ");
+      file.print(x);
+      file.print(" |\ty = ");
+      file.print(y);
+      file.print(" |\tz = ");
+      file.println(z);
 }
