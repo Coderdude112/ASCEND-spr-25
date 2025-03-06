@@ -79,36 +79,6 @@ void setup() {
   int32_t accelerometer[3];
   int32_t gyroscope[3];
 
-    /* Logging onto SD */
-    // Initialize the SD card //
-    Serial.print("Initializing SD card...");
-    if(!SD.begin()){
-        Serial.println("Initialization failed!");
-        while(1);
-    }
-    // Create a new file with a different name if the file already exists //
-    int fileIndex = 1;
-    String dataFileName = "flightdata.csv";
-    while (SD.exists(dataFileName)){
-        dataFileName = "flightdata" + String(fileIndex) + ".csv";
-        fileIndex++;
-    }
-    // Open the file //
-    Serial.println("Initialization successful.");
-    dataFile = SD.open("flightdata.csv", FILE_WRITE);
-    if(dataFile){
-        Serial.print("Writing to flightdata.csv...");
-        dataFile.println("X, Y, Z, qW, qX, qY, qZ, Temp"); //Printing out the headers
-      }
-      else{
-        Serial.println("Error opening flightdata.csv");
-      }
-
-    /* Initialize the BNO055 */
-    if(!bno.begin()){
-        Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
-        while(1);
-    }
   //GPS Code
     //while (!Serial);
 
@@ -244,6 +214,12 @@ void loop() {
     Serial.print(" qZ: ");
     Serial.print(quat.z(), 4);
     Serial.println("");
+
+    // Display calibration status for each sensor. //
+    Serial.print("CALIBRATION: Sys: "); Serial.print((int)systemCal, DEC);
+    Serial.print(" Gyro: "); Serial.print((int)gyro, DEC);
+    Serial.print(" Accel: "); Serial.print((int)accel, DEC);
+    Serial.print(" Mag: "); Serial.println((int)mag, DEC);
 
     // Temperature (1Hz) //
     Serial.print("Current Temperature: ");
