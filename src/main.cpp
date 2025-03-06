@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <SensirionI2cScd4x.h>
 #include <Wire.h>
-#include <SD.h>
+#include <STM32SD.h>
 #include <Adafruit_BNO055.h>
 #include <Adafruit_GPS.h>
 #include <ISM330DLC_ACC_GYRO_Driver.h>
@@ -31,6 +31,7 @@ float temperature = 0.0;
 float relativeHumidity = 0.0;
 
 
+void printEvent(File &file, sensors_event_t* event); // Function to print the sensor data to the .csv file
 
 // ---- //
 /* Main */
@@ -129,6 +130,33 @@ void setup() {
     
     // Ask for firmware version
     GPS.println(PMTK_Q_RELEASE);
+    /* Logging onto SD */ //https://docs.arduino.cc/learn/programming/sd-guide/
+    // Initialize the SD card //
+    Serial.print("Initializing SD card...");
+    if(!SD.begin(D32)){
+        Serial.println("Initialization failed!");
+        delay(10);
+        while(1);
+    }
+    // Create a new file with a different name if the file already exists //
+    int fileIndex = 1;
+    String dataFileName = "flightdata.csv";
+    while (SD.exists(dataFileName)){
+        dataFileName = "flightdata" + String(fileIndex) + ".csv";
+        fileIndex++;
+    }
+    // Open the file //
+    Serial.println("Initialization successful.");
+    dataFile = SD.open(dataFileName, FILE_WRITE);
+    if(dataFile){
+        Serial.print("Writing to ");
+        Serial.println(dataFileName);
+        dataFile.println("X, Y, Z, qW, qX, qY, qZ, Temp, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z"); // Printing out the headers
+        Serial.println("File setup complete.");
+    }
+    else{
+        Serial.println("Error opening file");
+    }
 }
 
 void loop() {
@@ -139,27 +167,33 @@ void loop() {
     int8_t temp = bno.getTemp();
 
     // Print the data to the .csv file //
-    dataFile = SD.open("flightdata.csv", FILE_WRITE);
+    // dataFile is already open in setup, no need to reopen it
     if(dataFile){
+        // Absolute Orientation (Euler Vector, 100Hz) //
+        dataFile.print("Euler: ");
         dataFile.print(euler.x()); dataFile.print(", ");
-        dataFile.print(euler.y());
-        dataFile.print(", ");
-        dataFile.print(euler.z());
-        dataFile.print(", ");
-        dataFile.print(quat.w());
-        dataFile.print(", ");
-        dataFile.print(quat.x());
-        dataFile.print(", ");
-        dataFile.print(quat.y());
-        dataFile.print(", ");
-        dataFile.print(quat.z());
-        dataFile.print(", ");
-        dataFile.print(temp);
-        dataFile.println();
-        dataFile.close();
+        dataFile.print(euler.y()); dataFile.print(", ");
+        dataFile.print(euler.z()); dataFile.print(", ");
+        // Absolute Orientation (Quaterion, 100Hz) //
+        dataFile.print("Quaterion: ");
+        dataFile.print(quat.w(), 4); dataFile.print(", ");
+        dataFile.print(quat.x(), 4); dataFile.print(", ");
+        dataFile.print(quat.y(), 4); dataFile.print(", ");
+        dataFile.print(quat.z(), 4); dataFile.print(", ");
+        
+        dataFile.print("Temp: "); dataFile.print(temp); dataFile.print(", ");
+
+        printEvent(dataFile, &orientationData);
+        printEvent(dataFile, &angVelocityData);
+        printEvent(dataFile, &linearAccelData);
+        printEvent(dataFile, &magnetometerData);
+        printEvent(dataFile, &accelerometerData);
+        printEvent(dataFile, &gravityData);
+
+        dataFile.flush();
     }
     else{
-        Serial.println("Error opening flightdata.csv");
+        Serial.println("Error writing to file");
     }
     
     /* Testing Code for BNO055 */
