@@ -10,6 +10,7 @@
 #include <Adafruit_GPS.h>
 #include <ISM330DLC_ACC_GYRO_Driver.h>
 #include <Adafruit_AS7341.h>
+#include <Adafruit_NeoPixel.h>
 
 // ---- //
 /* Vars */
