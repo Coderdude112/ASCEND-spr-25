@@ -134,9 +134,10 @@ void setup() {
     }
     // Create a new file with a different name if the file already exists //
     int fileIndex = 1;
-    String dataFileName = "flightdata.csv";
+    char dataFileName[25] = "flightdata.csv";
+
     while (SD.exists(dataFileName)){
-        dataFileName = "flightdata" + String(fileIndex) + ".csv";
+        sprintf(dataFileName, "flightdata%d.csv", fileIndex);
         fileIndex++;
     }
     // Open the file //
