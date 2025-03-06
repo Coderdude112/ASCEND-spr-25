@@ -9,6 +9,7 @@
 #include <Adafruit_BNO055.h>
 #include <Adafruit_GPS.h>
 #include <ISM330DLC_ACC_GYRO_Driver.h>
+#include <Adafruit_AS7341.h>
 
 // ---- //
 /* Vars */
@@ -38,6 +39,7 @@ int8_t temp; // Temperature (Celsius)
 sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
 float x, y, z; // Variables to store the x, y, z values of the sensor data
 void printEvent(File &file, sensors_event_t* event); // Function to print the sensor data to the .csv file
+Adafruit_AS7341 as7341;
 
 // ---- //
 /* Main */
@@ -112,6 +114,15 @@ void setup() {
         Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
         while(1);
     }
+
+    //AS7341
+    if (!as7341.begin()){
+        Serial.println("Could not find AS7341");
+        while (1) { delay(10); }
+      }
+      as7341.setATIME(100);
+      as7341.setASTEP(999);
+      as7341.setGain(AS7341_GAIN_256X);
 
     /* Logging onto SD */ //https://docs.arduino.cc/learn/programming/sd-guide/
     // Initialize the SD card //
