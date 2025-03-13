@@ -29,8 +29,8 @@ char c;
 SensirionI2cScd4x scd41;
 uint16_t scd41data;
 uint16_t co2Concentration = 0; 
-float temperature = 0.0;
-float relativeHumidity = 0.0;
+uint16_t temperature = 0.0;
+uint16_t relativeHumidity = 0.0;
 
 uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
 int8_t temp; // Temperature (Celsius)
@@ -69,6 +69,7 @@ void setup() {
     if (scd41good == 0) {
         Serial.println("Error waking up the SCD41 sensor.");
     }
+    scd41.startPeriodicMeasurement();
   
     // ISM330DLC_ACC_GYRO
     // An instance can be created and enabled when the I2C bus is used following the procedure below:
@@ -155,6 +156,8 @@ void setup() {
 }
 
 void loop() {
+    // Get data from SCD 41 Sensor: //
+    scd41data = scd41.readMeasurementRaw(co2Concentration, temperature, relativeHumidity);
     // Get data from BNO055 //
     temp = bno.getTemp(); // Temperature (Celsius)
     // Get Sensor Events
