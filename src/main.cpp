@@ -36,6 +36,8 @@ uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
 int8_t temp; // Temperature (Celsius)
 sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
 float x, y, z; // Variables to store the x, y, z values of the sensor data
+Adafruit_AS7341 as7341;
+
 char buffer[50];
 int floatBuffer[2];
 
@@ -169,32 +171,35 @@ void loop() {
     // - VECTOR_LINEARACCEL   - m/s^2
     // - VECTOR_GRAVITY       - m/s^2
 
-    // Get calibration status for each sensor //
-    bno.getCalibration(&systemCal, &gyro, &accel, &mag);
-
     // Print the data to the .csv file //
     // dataFile is already open in setup, no need to reopen it
     if(dataFile){
-        // Absolute Orientation (Euler Vector, 100Hz) //
-        dataFile.print("Euler: ");
-        dataFile.print(euler.x()); dataFile.print(", ");
-        dataFile.print(euler.y()); dataFile.print(", ");
-        dataFile.print(euler.z()); dataFile.print(", ");
-        // Absolute Orientation (Quaterion, 100Hz) //
-        dataFile.print("Quaterion: ");
-        dataFile.print(quat.w(), 4); dataFile.print(", ");
-        dataFile.print(quat.x(), 4); dataFile.print(", ");
-        dataFile.print(quat.y(), 4); dataFile.print(", ");
-        dataFile.print(quat.z(), 4); dataFile.print(", ");
         
-        dataFile.print("Temp: "); dataFile.print(temp); dataFile.print(", ");
+        toCharArray(temp); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(orientationData.orientation.x); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(orientationData.orientation.y); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(orientationData.orientation.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(angVelocityData.gyro.x); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(angVelocityData.gyro.y); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(angVelocityData.gyro.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(linearAccelData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(linearAccelData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(linearAccelData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(magnetometerData.magnetic.x); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(magnetometerData.magnetic.y); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(magnetometerData.magnetic.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometerData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometerData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometerData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gravityData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gravityData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
 
-        printEvent(dataFile, &orientationData);
-        printEvent(dataFile, &angVelocityData);
-        printEvent(dataFile, &linearAccelData);
-        printEvent(dataFile, &magnetometerData);
-        printEvent(dataFile, &accelerometerData);
-        printEvent(dataFile, &gravityData);
+        // SCD41
+        scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
+        toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(temperature); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", ");
 
         dataFile.flush();
     }
@@ -206,60 +211,6 @@ void loop() {
 // ---- //
 /* Functions */
 // ---- //
-
-void printEvent(File &file, sensors_event_t* event){
-    if(event->type == SENSOR_TYPE_ACCELEROMETER){
-        file.print("Accleration (): ");
-        x = event->acceleration.x;
-        y = event->acceleration.y;
-        z = event->acceleration.z;
-    }
-    else if(event->type == SENSOR_TYPE_ORIENTATION){
-        file.print("Orientation (): ");
-        x = event->orientation.x;
-        y = event->orientation.y;
-        z = event->orientation.z;
-    }
-    else if(event->type == SENSOR_TYPE_MAGNETIC_FIELD){
-        file.print("Magnetometer (uT): ");
-        x = event->magnetic.x;
-        y = event->magnetic.y;
-        z = event->magnetic.z;
-    }
-    else if(event->type == SENSOR_TYPE_GYROSCOPE){
-        file.print("Gyroscope (rad/s): ");
-        x = event->gyro.x;
-        y = event->gyro.y;
-        z = event->gyro.z;
-    }
-    else if(event->type == SENSOR_TYPE_ROTATION_VECTOR){
-        file.print("Rotation Vector (): ");
-        x = event->gyro.x;
-        y = event->gyro.y;
-        z = event->gyro.z;
-    }
-    else if(event->type == SENSOR_TYPE_LINEAR_ACCELERATION){
-        file.print("Linear Acceleration (m/s^2): ");
-        x = event->acceleration.x;
-        y = event->acceleration.y;
-        z = event->acceleration.z;
-    }
-    else if(event->type == SENSOR_TYPE_GRAVITY){
-        file.print("Gravity (m/s^2):");
-        x = event->acceleration.x;
-        y = event->acceleration.y;
-        z = event->acceleration.z;
-    }
-    else{
-        file.print("Unk:");
-    }
-    
-      file.print("\tx = ");
-      file.print(x);
-      file.print(" |\ty = ");
-      file.print(y);
-      file.print(" |\tz = ");
-      file.println(z);
 
 void splitFloat(int buffer[], float in) {
   buffer[0] = in;
