@@ -32,15 +32,27 @@ uint16_t co2Concentration = 0;
 float temperature = 0.0;
 float relativeHumidity = 0.0;
 
-
-imu::Vector<3> euler; // Euler angles (degrees)
-imu::Quaternion quat; // Quaternion (w, x, y, z)
 uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
 int8_t temp; // Temperature (Celsius)
 sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
 float x, y, z; // Variables to store the x, y, z values of the sensor data
+char buffer[50];
+int floatBuffer[2];
+
+// --- //
+/* Functions */
+// -- //
 void printEvent(File &file, sensors_event_t* event); // Function to print the sensor data to the .csv file
-Adafruit_AS7341 as7341;
+void splitFloat(int buffer[], float in);
+void toCharArray(String in);
+void toCharArray(char* in);
+void toCharArray(const char* in);
+void toCharArray(int in);
+void toCharArray(float in);
+void toCharArray(bool in);
+void toCharArray(uint8_t in);
+void toCharArray(uint16_t in);
+void toCharArray(int8_t in);
 
 // ---- //
 /* Main */
@@ -142,8 +154,6 @@ void setup() {
 
 void loop() {
     // Get data from BNO055 //
-    euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER); // Euler angles (degrees)
-    quat = bno.getQuat(); // Quaternion (w, x, y, z)
     temp = bno.getTemp(); // Temperature (Celsius)
     // Get Sensor Events
     bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
@@ -191,41 +201,6 @@ void loop() {
     else{
         Serial.println("Error writing to file");
     }
-    
-    /* Testing Code for BNO055 */
-    // Absolute Orientation (Euler Vector, 100Hz) //
-    Serial.print("X: ");
-    Serial.print(euler.x());
-    Serial.print(" Y: ");
-    Serial.print(euler.y());
-    Serial.print(" Z: ");
-    Serial.print(euler.z());
-    Serial.println("");
-   
-    // Absolute Orientation (Quaterion, 100Hz) //
-    Serial.print("qW: ");
-    Serial.print(quat.w(), 4);
-    Serial.print(" qX: ");
-    Serial.print(quat.x(), 4);
-    Serial.print(" qY: ");
-    Serial.print(quat.y(), 4);
-    Serial.print(" qZ: ");
-    Serial.print(quat.z(), 4);
-    Serial.println("");
-
-    // Display calibration status for each sensor. //
-    Serial.print("CALIBRATION: Sys: "); Serial.print((int)systemCal, DEC);
-    Serial.print(" Gyro: "); Serial.print((int)gyro, DEC);
-    Serial.print(" Accel: "); Serial.print((int)accel, DEC);
-    Serial.print(" Mag: "); Serial.println((int)mag, DEC);
-
-    // Temperature (1Hz) //
-    Serial.print("Current Temperature: ");
-    Serial.print(temp);
-    Serial.println(" C");
-    Serial.println("");
-
-    delay(100);
 }
 
 // ---- //
@@ -285,4 +260,38 @@ void printEvent(File &file, sensors_event_t* event){
       file.print(y);
       file.print(" |\tz = ");
       file.println(z);
+
+void splitFloat(int buffer[], float in) {
+  buffer[0] = in;
+  buffer[1] = abs(trunc((in - buffer[0]) * 1000));
+}
+
+void toCharArray(String in) {
+  in.toCharArray(buffer, sizeof(buffer));
+}
+void toCharArray(char* in) {
+  sprintf(buffer, in);
+}
+void toCharArray(const char* in) {
+  sprintf(buffer, in);
+}
+void toCharArray(int in) {
+  sprintf(buffer, "%i", in);
+}
+void toCharArray(float in) {
+  splitFloat(floatBuffer, in);
+  sprintf(buffer, "%i.%i", floatBuffer[0], floatBuffer[1]);
+}
+void toCharArray(bool in) {
+  int convertedIn = in;
+  sprintf(buffer, (in ? "true" : "false"));
+}
+void toCharArray(uint8_t in) {
+  sprintf(buffer, "%i", in);
+}
+void toCharArray(uint16_t in) {
+  sprintf(buffer, "%i", in);
+}
+void toCharArray(int8_t in) {
+  sprintf(buffer, "%i", in);
 }
