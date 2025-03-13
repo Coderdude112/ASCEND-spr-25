@@ -29,8 +29,8 @@ char c;
 SensirionI2cScd4x scd41;
 uint16_t scd41data;
 uint16_t co2Concentration = 0; 
-float temperature = 0.0;
-float relativeHumidity = 0.0;
+uint16_t temperature = 0.0;
+uint16_t relativeHumidity = 0.0;
 
 
 imu::Vector<3> euler; // Euler angles (degrees)
@@ -55,6 +55,7 @@ void setup() {
     if (scd41good == 0) {
         Serial.println("Error waking up the SCD41 sensor.");
     }
+    scd41.startPeriodicMeasurement();
   
     // ISM330DLC_ACC_GYRO
     // An instance can be created and enabled when the I2C bus is used following the procedure below:
@@ -141,6 +142,8 @@ void setup() {
 }
 
 void loop() {
+    // Get data from SCD 41 Sensor: //
+    scd41data = scd41.readMeasurementRaw(co2Concentration, temperature, relativeHumidity);
     // Get data from BNO055 //
     euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER); // Euler angles (degrees)
     quat = bno.getQuat(); // Quaternion (w, x, y, z)
