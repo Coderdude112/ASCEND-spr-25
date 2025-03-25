@@ -198,6 +198,17 @@ void loop() {
         toCharArray(gravityData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
 
+        // ISM 330DLC
+        ISM330DLCSensor AccGyr(&Wire);
+        AccGyr.get_X_Axes(accelerometer);
+        AccGyr.get_G_Axes(gyroscope);
+        toCharArray(accelerometer[0]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometer[1]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometer[2]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[0]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[1]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[2]); dataFile.print(buffer); dataFile.print(", ");
+
         // SCD41
         scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
         toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
