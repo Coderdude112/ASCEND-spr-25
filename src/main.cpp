@@ -17,15 +17,23 @@
 /* Vars */
 // ---- //
 
+// Logging Vars
 File dataFile; //Instance of the File class
-Adafruit_BNO055 bno; //Instance of the Adafruit_BNO055 class
-//GPS Code
+char buffer[50];
+int floatBuffer[2];
+
+// GPS Vars
 Adafruit_GPS GPS(&Wire);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO false
 uint32_t timer = millis();
 char c;
+
+// BNO055 Vars
+Adafruit_BNO055 bno;
+sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
+float x, y, z; // Variables to store the x, y, z values of the sensor data
 
 // ISM 330DLC vars
 int32_t accelerometer[3];
@@ -37,14 +45,7 @@ uint16_t co2Concentration = 0;
 int16_t temperature = 0.0;
 int16_t relativeHumidity = 0.0;
 
-//BPM390 vars
-#define SEALEVELPRESSURE_HPA (1013.25)
-Adafruit_BMP3XX bmp;
-
-uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
-int8_t temp; // Temperature (Celsius)
-sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
-float x, y, z; // Variables to store the x, y, z values of the sensor data
+// AS7341 Vars
 Adafruit_AS7341 as7341;
 
 char buffer[50];
@@ -81,11 +82,6 @@ void setup() {
     }
     scd41.startPeriodicMeasurement();
 
-    bmp.begin();
-    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
-    bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
-    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
-
     // ISM330DLC_ACC_GYRO
     // An instance can be created and enabled when the I2C bus is used following the procedure below:
     ISM330DLCSensor AccGyr(&Wire);
@@ -93,41 +89,24 @@ void setup() {
     AccGyr.Enable_X();  
     AccGyr.Enable_G();
 
-  //GPS Code
-    //while (!Serial);
-
-    // also spit it out
-    Serial.println("Adafruit I2C GPS library basic test!");
-    
-    // connect at 115200 so we can read the GPS fast enough and echo without dropping chars
-    // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
-    GPS.begin(0x10);  // The I2C address to use is 0x10
+  // GPS
+    GPS.begin(0x10);
     // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
     GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-    // uncomment this line to turn on only the "minimum recommended" data
-    //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-    // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
-    // the parser doesn't care about other sentences at this time
-    // Set the update rate
     GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-    // For the parsing code to work nicely and have time to sort thru the data, and
-    // print it out we don't suggest using anything higher than 1 Hz
-
-    // Request updates on antenna status, comment out to keep quiet
-    GPS.sendCommand(PGCMD_ANTENNA);
+    GPS.sendCommand(PGCMD_ANTENNA); // Request updates on antenna status, comment out to keep quiet
 
     delay(1000);
     
-    // Ask for firmware version
-    GPS.println(PMTK_Q_RELEASE);
+    GPS.println(PMTK_Q_RELEASE); // Ask for firmware version
 
-     /* Initialize the BNO055 */
+     // BNO055
     if(!bno.begin()){
         Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
         while(1);
     }
 
-    //AS7341
+    // AS7341
     if (!as7341.begin()){
         Serial.println("Could not find AS7341");
         while (1) { delay(10); }
@@ -170,27 +149,11 @@ void setup() {
 }
 
 void loop() {
-    // Get data from BMP 390 Sensor: //
-    bmp.performReading();
-    // Get data from SCD 41 Sensor: //
-    scd41data = scd41.readMeasurementRaw(&co2Concentration, &temperature, &relativeHumidity);
-    // Get data from BNO055 //
-    temp = bno.getTemp(); // Temperature (Celsius)
-    // Get Sensor Events
-    bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER); // - VECTOR_EULER         - degrees
-    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE); // - VECTOR_GYROSCOPE     - rad/s
-    bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL); // - VECTOR_LINEARACCEL   - m/s^2
-    bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER); // - VECTOR_MAGNETOMETER  - uT
-    bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER); // - VECTOR_ACCELEROMETER - m/s^2
-    bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY); // - VECTOR_GRAVITY       - m/s^2
-
     // Print the data to the .csv file //
     // dataFile is already open in setup, no need to reopen it
     if(dataFile){
-        
+
         //GPS (refer to https://adafruit.github.io/Adafruit_GPS/html/class_adafruit___g_p_s.html#a2d3b65036628a65d1e119d3d9a69678c)
-        if(Serial.available){
-        }
         if(GPS.available()){
             GPS.read();
         }
@@ -202,45 +165,52 @@ void loop() {
         if(millis() - timer > 2000){
           timer = millis(); // reset the timer
           if(GPS.hour < 10){
-            dataFile.print('0');
+            toCharArray('0');
           }
-          dataFile.print(GPS.hour, DEC); dataFile.print(':');
+          toCharArray(GPS.hour); dataFile.print(buffer); toCharArray(':');
           if(GPS.minute < 10){
-            dataFile.print('0');
+            toCharArray('0');
           }
-          dataFile.print(GPS.minute, DEC); dataFile.print(':');
+          toCharArray(GPS.minute); dataFile.print(buffer); toCharArray(':');
           if(GPS.seconds < 10){
-            dataFile.print('0');
+            toCharArray('0');
           }
-          dataFile.print(GPS.seconds, DEC); dataFile.print('.');
+          toCharArray(GPS.seconds); dataFile.print(buffer); toCharArray('.');
           if(GPS.milliseconds < 10){
             dataFile.print("00");
           }
           else if(GPS.milliseconds > 9 && GPS.milliseconds < 100) {
             dataFile.print("0");
           }
-          dataFile.println(GPS.milliseconds);
-          dataFile.print(GPS.day, DEC); dataFile.print('/');
-          dataFile.print(GPS.month, DEC); dataFile.print("/20");
-          dataFile.println(GPS.year, DEC); dataFile.print(", ");
-          dataFile.print((int)GPS.fix); dataFile.print(", ");
-          dataFile.println((int)GPS.fixquality); dataFile.print(", ");
+          toCharArray(GPS.milliseconds); dataFile.print(buffer); dataFile.print(", ");
+          toCharArray(GPS.day); dataFile.print(buffer); dataFile.print("/");
+          toCharArray(GPS.month); dataFile.print(buffer); dataFile.print("/20");
+          toCharArray(GPS.year); dataFile.print(buffer); dataFile.print(", ");
+          toCharArray((int)GPS.fix); dataFile.print(buffer); dataFile.print(", ");
+          toCharArray((int)GPS.fixquality); dataFile.print(buffer); dataFile.print(", ");
           if (GPS.fix) {
-            dataFile.print(GPS.latitudeDegrees, 4); dataFile.print(GPS.lat); dataFile.print(", ");
-            dataFile.print(GPS.longitudeDegrees, 4); dataFile.println(GPS.lon);
-            dataFile.print(GPS.speed); dataFile.print(", ");
-            dataFile.print(GPS.angle); dataFile.print(", ");
-            dataFile.print(GPS.altitude); dataFile.print(", ");
-            dataFile.print((int)GPS.satellites); dataFile.print(", ");
-            dataFile.print(GPS.magvariation); dataFile.print(", ");
-            dataFile.print(GPS.HDOP); dataFile.print(", ");
-            dataFile.print(GPS.VDOP); dataFile.print(", ");
-            dataFile.print(GPS.PDOP); dataFile.print(", ");
+            toCharArray(GPS.latitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lat); dataFile.print(", ");
+            toCharArray(GPS.longitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lon); dataFile.print(", ");
+            toCharArray(GPS.speed); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray(GPS.angle); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray(GPS.altitude); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray((int)GPS.satellites); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray(GPS.magvariation); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray(GPS.HDOP); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray(GPS.VDOP); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray(GPS.PDOP); dataFile.print(buffer); dataFile.print(", ");
           }
         }
 
         // BNO055
-        toCharArray(temp); dataFile.print(buffer); dataFile.print(", ");
+        // Get Sensor Events
+        bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);            // - VECTOR_EULER         - degrees
+        bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);        // - VECTOR_GYROSCOPE     - rad/s
+        bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);      // - VECTOR_LINEARACCEL   - m/s^2
+        bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);    // - VECTOR_MAGNETOMETER  - uT
+        bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);  // - VECTOR_ACCELEROMETER - m/s^2
+        bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);              // - VECTOR_GRAVITY       - m/s^2
+        toCharArray(bno.getTemp()); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.x); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.y); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.z); dataFile.print(buffer); dataFile.print(", ");
