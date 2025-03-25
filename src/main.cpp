@@ -11,6 +11,7 @@
 #include <ISM330DLCSensor.h>
 #include <Adafruit_AS7341.h>
 #include <Adafruit_NeoPixel.h>
+#include <Adafruit_BMP3XX.h>
 
 // ---- //
 /* Vars */
@@ -35,6 +36,10 @@ int16_t scd41data;
 uint16_t co2Concentration = 0; 
 int16_t temperature = 0.0;
 int16_t relativeHumidity = 0.0;
+
+//BPM390 vars
+#define SEALEVELPRESSURE_HPA (1013.25)
+Adafruit_BMP3XX bmp;
 
 uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
 int8_t temp; // Temperature (Celsius)
@@ -74,7 +79,12 @@ void setup() {
         Serial.println("Error waking up the SCD41 sensor.");
     }
     scd41.startPeriodicMeasurement();
-  
+
+    bmp.begin();
+    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
+    bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
+    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
+
     // ISM330DLC_ACC_GYRO
     // An instance can be created and enabled when the I2C bus is used following the procedure below:
     ISM330DLCSensor AccGyr(&Wire);
@@ -156,6 +166,8 @@ void setup() {
 }
 
 void loop() {
+    // Get data from BMP 390 Sensor: //
+    bmp.performReading();
     // Get data from SCD 41 Sensor: //
     scd41data = scd41.readMeasurementRaw(&co2Concentration, &temperature, &relativeHumidity);
     // Get data from BNO055 //
