@@ -59,6 +59,7 @@ void toCharArray(bool in);
 void toCharArray(uint8_t in);
 void toCharArray(uint16_t in);
 void toCharArray(int8_t in);
+void toCharArray(int32_t in);
 
 // ---- //
 /* Main */
@@ -147,7 +148,7 @@ void setup() {
     if(dataFile){
         Serial.print("Writing to ");
         Serial.println(dataFileName);
-        dataFile.println("X, Y, Z, qW, qX, qY, qZ, Temp, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z"); // Printing out the headers
+        dataFile.println("Temp, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z, CO2 Concentration, Temp, Relative Humidity"); // Printing out the headers
         Serial.println("File setup complete.");
     }
     else{
@@ -161,23 +162,20 @@ void loop() {
     // Get data from BNO055 //
     temp = bno.getTemp(); // Temperature (Celsius)
     // Get Sensor Events
-    bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
-    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-    bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-    bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
-    bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-    bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
-    // - VECTOR_ACCELEROMETER - m/s^2
-    // - VECTOR_MAGNETOMETER  - uT
-    // - VECTOR_GYROSCOPE     - rad/s
-    // - VECTOR_EULER         - degrees
-    // - VECTOR_LINEARACCEL   - m/s^2
-    // - VECTOR_GRAVITY       - m/s^2
+    bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER); // - VECTOR_EULER         - degrees
+    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE); // - VECTOR_GYROSCOPE     - rad/s
+    bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL); // - VECTOR_LINEARACCEL   - m/s^2
+    bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER); // - VECTOR_MAGNETOMETER  - uT
+    bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER); // - VECTOR_ACCELEROMETER - m/s^2
+    bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY); // - VECTOR_GRAVITY       - m/s^2
 
     // Print the data to the .csv file //
     // dataFile is already open in setup, no need to reopen it
     if(dataFile){
         
+        //GPS
+
+        // BNO055
         toCharArray(temp); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.x); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.y); dataFile.print(buffer); dataFile.print(", ");
