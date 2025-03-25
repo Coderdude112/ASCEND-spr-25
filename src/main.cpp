@@ -26,6 +26,10 @@ Adafruit_GPS GPS(&Wire);
 uint32_t timer = millis();
 char c;
 
+// ISM 330DLC vars
+int32_t accelerometer[3];
+int32_t gyroscope[3];
+
 SensirionI2cScd4x scd41;
 int16_t scd41data;
 uint16_t co2Concentration = 0; 
@@ -77,10 +81,6 @@ void setup() {
     AccGyr.begin();
     AccGyr.Enable_X();  
     AccGyr.Enable_G();
-  
-  // Read accelerometer and gyroscope.
-  int32_t accelerometer[3];
-  int32_t gyroscope[3];
 
   //GPS Code
     //while (!Serial);
@@ -197,6 +197,17 @@ void loop() {
         toCharArray(gravityData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(gravityData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
+
+        // ISM 330DLC
+        ISM330DLCSensor AccGyr(&Wire);
+        AccGyr.Get_X_Axes(accelerometer);
+        AccGyr.Get_G_Axes(gyroscope);
+        toCharArray(accelerometer[0]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometer[1]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometer[2]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[0]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[1]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[2]); dataFile.print(buffer); dataFile.print(", ");
 
         // SCD41
         scd41data = scd41.readMeasurement(&co2Concentration, &temperature, &relativeHumidity);
