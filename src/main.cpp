@@ -260,3 +260,6 @@ void toCharArray(uint16_t in) {
 void toCharArray(int8_t in) {
   sprintf(buffer, "%i", in);
 }
+void toCharArray(int32_t in) {
+  sprintf(buffer, "%i", in);
+}
