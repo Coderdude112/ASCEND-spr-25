@@ -27,10 +27,10 @@ uint32_t timer = millis();
 char c;
 
 SensirionI2cScd4x scd41;
-uint16_t scd41data;
+int16_t scd41data;
 uint16_t co2Concentration = 0; 
-uint16_t temperature = 0.0;
-uint16_t relativeHumidity = 0.0;
+int16_t temperature = 0.0;
+int16_t relativeHumidity = 0.0;
 
 uint8_t systemCal, gyro, accel, mag; // Calibration status for each sensor
 int8_t temp; // Temperature (Celsius)
@@ -157,7 +157,7 @@ void setup() {
 
 void loop() {
     // Get data from SCD 41 Sensor: //
-    scd41data = scd41.readMeasurementRaw(co2Concentration, temperature, relativeHumidity);
+    scd41data = scd41.readMeasurementRaw(&co2Concentration, &temperature, &relativeHumidity);
     // Get data from BNO055 //
     temp = bno.getTemp(); // Temperature (Celsius)
     // Get Sensor Events
@@ -199,7 +199,7 @@ void loop() {
         toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
 
         // SCD41
-        scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
+        scd41data = scd41.readMeasurement(&co2Concentration, &temperature, &relativeHumidity);
         toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(temperature); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", ");
