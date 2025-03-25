@@ -48,8 +48,10 @@ int16_t relativeHumidity = 0.0;
 // AS7341 Vars
 Adafruit_AS7341 as7341;
 
-char buffer[50];
-int floatBuffer[2];
+// BPM390 vars
+Adafruit_BMP3XX baro;
+const float seaLevelPressure = 1013.25;
+
 
 // --- //
 /* Functions */
@@ -115,6 +117,13 @@ void setup() {
       as7341.setASTEP(999);
       as7341.setGain(AS7341_GAIN_256X);
 
+    // BMP390
+    baro.begin_I2C(0x76);
+    baro.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
+    baro.setPressureOversampling(BMP3_OVERSAMPLING_8X);
+    baro.setIIRFilterCoeff(BMP3_IIR_FILTER_DISABLE);
+    baro.setOutputDataRate(BMP3_ODR_100_HZ);
+
     /* Logging onto SD */ //https://docs.arduino.cc/learn/programming/sd-guide/
     // Initialize the SD card //
     Serial.print("Initializing SD card...");
@@ -140,7 +149,9 @@ void setup() {
         dataFile.print("Hour, Minute, Second, Millisecond, Day, Month, Year, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP"); //GPS Header
         dataFile.print("Temp, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z"); // BNO055 Header
         dataFile.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z, "); // ISM 330DLC Header
-        dataFile.println("CO2 Concentration, Temp, Relative Humidity"); // SCD41 Header
+        dataFile.print("CO2 Concentration, Temp, Relative Humidity"); // SCD41 Header
+        dataFile.print("415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR"); // AS7341 Header
+        dataFile.print("Altitude, Pressure, Temperature"); // BMP390 Header
         Serial.println("File setup complete.");
     }
     else{
@@ -246,6 +257,24 @@ void loop() {
         toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(temperature); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", ");
+
+        // AS7341
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_415nm_F1)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_445nm_F2)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_480nm_F3)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_515nm_F4)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_555nm_F5)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_590nm_F6)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_630nm_F7)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_680nm_F8)); dataFile.print(buffer); dataFile.print(", ");
+        
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_CLEAR)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_NIR)); dataFile.print(buffer); dataFile.print(", ");
+
+        // BMP 390
+        toCharArray(baro.readAltitude(seaLevelPressure)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(baro.readPressure()); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(baro.readTemperature()); dataFile.print(buffer);
 
         dataFile.flush();
     }
