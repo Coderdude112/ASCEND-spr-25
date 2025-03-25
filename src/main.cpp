@@ -158,7 +158,10 @@ void setup() {
     if(dataFile){
         Serial.print("Writing to ");
         Serial.println(dataFileName);
-        dataFile.println("Temp, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z, CO2 Concentration, Temp, Relative Humidity"); // Printing out the headers
+        dataFile.print("Hour, Minute, Second, Millisecond, Day, Month, Year, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP"); //GPS Header
+        dataFile.print("Temp, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z"); // BNO055 Header
+        dataFile.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z, "); // ISM 330DLC Header
+        dataFile.println("CO2 Concentration, Temp, Relative Humidity"); // SCD41 Header
         Serial.println("File setup complete.");
     }
     else{
@@ -185,7 +188,56 @@ void loop() {
     // dataFile is already open in setup, no need to reopen it
     if(dataFile){
         
-        //GPS
+        //GPS (refer to https://adafruit.github.io/Adafruit_GPS/html/class_adafruit___g_p_s.html#a2d3b65036628a65d1e119d3d9a69678c)
+        if(Serial.available){
+        }
+        if(GPS.available()){
+            GPS.read();
+        }
+        if(GPS.newNMEAreceived()){
+          if(!GPS.parse(GPS.lastNMEA())){ // this also sets the newNMEAreceived() flag to false
+            return;
+          }
+        }
+        if(millis() - timer > 2000){
+          timer = millis(); // reset the timer
+          if(GPS.hour < 10){
+            dataFile.print('0');
+          }
+          dataFile.print(GPS.hour, DEC); dataFile.print(':');
+          if(GPS.minute < 10){
+            dataFile.print('0');
+          }
+          dataFile.print(GPS.minute, DEC); dataFile.print(':');
+          if(GPS.seconds < 10){
+            dataFile.print('0');
+          }
+          dataFile.print(GPS.seconds, DEC); dataFile.print('.');
+          if(GPS.milliseconds < 10){
+            dataFile.print("00");
+          }
+          else if(GPS.milliseconds > 9 && GPS.milliseconds < 100) {
+            dataFile.print("0");
+          }
+          dataFile.println(GPS.milliseconds);
+          dataFile.print(GPS.day, DEC); dataFile.print('/');
+          dataFile.print(GPS.month, DEC); dataFile.print("/20");
+          dataFile.println(GPS.year, DEC); dataFile.print(", ");
+          dataFile.print((int)GPS.fix); dataFile.print(", ");
+          dataFile.println((int)GPS.fixquality); dataFile.print(", ");
+          if (GPS.fix) {
+            dataFile.print(GPS.latitudeDegrees, 4); dataFile.print(GPS.lat); dataFile.print(", ");
+            dataFile.print(GPS.longitudeDegrees, 4); dataFile.println(GPS.lon);
+            dataFile.print(GPS.speed); dataFile.print(", ");
+            dataFile.print(GPS.angle); dataFile.print(", ");
+            dataFile.print(GPS.altitude); dataFile.print(", ");
+            dataFile.print((int)GPS.satellites); dataFile.print(", ");
+            dataFile.print(GPS.magvariation); dataFile.print(", ");
+            dataFile.print(GPS.HDOP); dataFile.print(", ");
+            dataFile.print(GPS.VDOP); dataFile.print(", ");
+            dataFile.print(GPS.PDOP); dataFile.print(", ");
+          }
+        }
 
         // BNO055
         toCharArray(temp); dataFile.print(buffer); dataFile.print(", ");
