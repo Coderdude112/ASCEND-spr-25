@@ -35,7 +35,7 @@ Adafruit_BNO055 bno;
 sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
 float x, y, z; // Variables to store the x, y, z values of the sensor data
 
-// ISM 330DLC vars
+// ISM 330DLC Vars
 int32_t accelerometer[3];
 int32_t gyroscope[3];
 
@@ -48,7 +48,7 @@ int16_t relativeHumidity = 0.0;
 // AS7341 Vars
 Adafruit_AS7341 as7341;
 
-// BPM390 vars
+// BPM390 Vars
 Adafruit_BMP3XX baro;
 const float seaLevelPressure = 1013.25;
 
@@ -91,7 +91,7 @@ void setup() {
     AccGyr.Enable_X();  
     AccGyr.Enable_G();
 
-  // GPS
+    // GPS
     GPS.begin(0x10);
     // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
     GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
@@ -102,14 +102,14 @@ void setup() {
     
     GPS.println(PMTK_Q_RELEASE); // Ask for firmware version
 
-     // BNO055
+    // BNO055
     if(!bno.begin()){
         Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
         while(1);
     }
 
     // AS7341
-    if (!as7341.begin()){
+    if(!as7341.begin()){
         Serial.println("Could not find AS7341");
         while (1) { delay(10); }
       }
@@ -136,7 +136,7 @@ void setup() {
     int fileIndex = 1;
     char dataFileName[25] = "flightdata.csv";
 
-    while (SD.exists(dataFileName)){
+    while(SD.exists(dataFileName)){
         sprintf(dataFileName, "flightdata%d.csv", fileIndex);
         fileIndex++;
     }
@@ -146,12 +146,12 @@ void setup() {
     if(dataFile){
         Serial.print("Writing to ");
         Serial.println(dataFileName);
-        dataFile.print("Hour, Minute, Second, Millisecond, Day, Month, Year, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP"); //GPS Header
-        dataFile.print("Temp, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z"); // BNO055 Header
+        dataFile.print("Time, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP, "); //GPS Header
+        dataFile.print("Temperature, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z, "); // BNO055 Header
         dataFile.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z, "); // ISM 330DLC Header
-        dataFile.print("CO2 Concentration, Temp, Relative Humidity"); // SCD41 Header
-        dataFile.print("415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR"); // AS7341 Header
-        dataFile.print("Altitude, Pressure, Temperature"); // BMP390 Header
+        dataFile.print("CO2 Concentration, Temperature, Relative Humidity, "); // SCD41 Header
+        dataFile.print("415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR, "); // AS7341 Header
+        dataFile.println("Altitude, Pressure, Temperature"); // BMP390 Header
         Serial.println("File setup complete.");
     }
     else{
@@ -175,6 +175,9 @@ void loop() {
         }
         if(millis() - timer > 2000){
           timer = millis(); // reset the timer
+          toCharArray("20"); toCharArray(GPS.year); dataFile.print(buffer); dataFile.print("-");
+          toCharArray(GPS.month); dataFile.print(buffer); dataFile.print("-");
+          toCharArray(GPS.day); dataFile.print(buffer); dataFile.print(" ");
           if(GPS.hour < 10){
             toCharArray('0');
           }
@@ -190,16 +193,13 @@ void loop() {
           if(GPS.milliseconds < 10){
             dataFile.print("00");
           }
-          else if(GPS.milliseconds > 9 && GPS.milliseconds < 100) {
+          else if(GPS.milliseconds > 9 && GPS.milliseconds < 100){
             dataFile.print("0");
           }
           toCharArray(GPS.milliseconds); dataFile.print(buffer); dataFile.print(", ");
-          toCharArray(GPS.day); dataFile.print(buffer); dataFile.print("/");
-          toCharArray(GPS.month); dataFile.print(buffer); dataFile.print("/20");
-          toCharArray(GPS.year); dataFile.print(buffer); dataFile.print(", ");
           toCharArray((int)GPS.fix); dataFile.print(buffer); dataFile.print(", ");
           toCharArray((int)GPS.fixquality); dataFile.print(buffer); dataFile.print(", ");
-          if (GPS.fix) {
+          if(GPS.fix){
             toCharArray(GPS.latitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lat); dataFile.print(", ");
             toCharArray(GPS.longitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lon); dataFile.print(", ");
             toCharArray(GPS.speed); dataFile.print(buffer); dataFile.print(", ");
@@ -271,7 +271,7 @@ void loop() {
         toCharArray(as7341.getChannel(AS7341_CHANNEL_CLEAR)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(as7341.getChannel(AS7341_CHANNEL_NIR)); dataFile.print(buffer); dataFile.print(", ");
 
-        // BMP 390
+        // BMP390
         toCharArray(baro.readAltitude(seaLevelPressure)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(baro.readPressure()); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(baro.readTemperature()); dataFile.print(buffer);
@@ -281,6 +281,76 @@ void loop() {
     else{
         Serial.println("Error writing to file");
     }
+
+    // Print data live to telemetry //
+    Serial2.print("Hour, Minute, Second, Millisecond, Day, Month, Year, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, "); //GPS Header
+    Serial2.print("Linear Accel X, Linear Accel Y, Linear Accel Z, "); // BNO055 Header
+    Serial2.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, "); // ISM 330DLC Header
+    Serial2.print("CO2 Concentration, Temperature, "); // SCD41 Header
+    Serial2.println("Altitude, Pressure, Temperature"); // BMP390 Header
+
+    if(millis() - timer > 2000){
+      timer = millis(); // reset the timer
+      Serial2.print("20"); Serial2.print(GPS.year); Serial2.print("-");
+      Serial2.print(GPS.month); Serial2.print("-");
+      Serial2.print(GPS.day); Serial2.print(" ");
+      if(GPS.hour < 10){
+        Serial2.print('0');
+      }
+      Serial2.print(GPS.hour); Serial2.print(':');
+      if(GPS.minute < 10){
+        Serial2.print('0');
+      }
+      Serial2.print(GPS.minute); Serial2.print(':');
+      if(GPS.seconds < 10){
+        Serial2.print('0');
+      }
+      Serial2.print(GPS.seconds); Serial2.print('.');
+      if(GPS.milliseconds < 10){
+        Serial2.print("00");
+      }
+      else if(GPS.milliseconds > 9 && GPS.milliseconds < 100){
+        Serial2.print("0");
+      }
+      Serial2.print(GPS.milliseconds); dataFile.print(", ");
+      Serial2.print((int)GPS.fix); dataFile.print(", ");
+      Serial2.print((int)GPS.fixquality); dataFile.print(", ");
+      if(GPS.fix){
+        Serial2.print(GPS.latitudeDegrees); Serial2.print(GPS.lat); Serial2.print(", ");
+        Serial2.print(GPS.longitudeDegrees); Serial2.print(GPS.lon); Serial2.print(", ");
+        Serial2.print(GPS.speed); Serial2.print(", ");
+        Serial2.print(GPS.angle); Serial2.print(", ");
+        Serial2.print(GPS.altitude); Serial2.print(", ");
+        Serial2.print((int)GPS.satellites); Serial2.print(", ");
+        Serial2.print(GPS.magvariation); Serial2.print(", ");
+      }
+    }
+
+    // BNO055
+    bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
+    Serial2.print(linearAccelData.acceleration.x); Serial2.print(", ");
+    Serial2.print(linearAccelData.acceleration.y); Serial2.print(", ");
+    Serial2.print(linearAccelData.acceleration.z); Serial2.print(", ");
+
+    // ISM 330DLC
+    ISM330DLCSensor AccGyr(&Wire);
+    AccGyr.Get_X_Axes(accelerometer);
+    Serial2.print(accelerometer[0]); dataFile.print(", ");
+    Serial2.print(accelerometer[1]); dataFile.print(", ");
+    Serial2.print(accelerometer[2]); dataFile.print(", ");
+
+    // SCD41
+    scd41data = scd41.readMeasurement(&co2Concentration, &temperature, &relativeHumidity);
+    Serial2.print(co2Concentration); Serial2.print(", ");
+    Serial2.print(temperature); Serial2.print(", ");
+
+    // BMP390
+    Serial2.print(baro.readAltitude(seaLevelPressure)); Serial2.print(", ");
+    Serial2.print(baro.readPressure()); Serial2.print(", ");
+    Serial2.print(baro.readTemperature());
+
+
+    delay(1000);
 }
 
 // ---- //
