@@ -283,71 +283,71 @@ void loop() {
     }
 
     // Print data live to telemetry //
-    Serial2.print("Hour, Minute, Second, Millisecond, Day, Month, Year, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, "); //GPS Header
-    Serial2.print("Linear Accel X, Linear Accel Y, Linear Accel Z, "); // BNO055 Header
-    Serial2.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, "); // ISM 330DLC Header
-    Serial2.print("CO2 Concentration, Temperature, "); // SCD41 Header
-    Serial2.println("Altitude, Pressure, Temperature"); // BMP390 Header
+    Serial.print("Hour, Minute, Second, Millisecond, Day, Month, Year, Fix, Quality, Latitude Degrees. Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, "); //GPS Header
+    Serial.print("Linear Accel X, Linear Accel Y, Linear Accel Z, "); // BNO055 Header
+    Serial.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, "); // ISM 330DLC Header
+    Serial.print("CO2 Concentration, Temperature, "); // SCD41 Header
+    Serial.println("Altitude, Pressure, Temperature"); // BMP390 Header
 
     if(millis() - timer > 2000){
       timer = millis(); // reset the timer
-      Serial2.print("20"); Serial2.print(GPS.year); Serial2.print("-");
-      Serial2.print(GPS.month); Serial2.print("-");
-      Serial2.print(GPS.day); Serial2.print(" ");
+      Serial.print("20"); Serial.print(GPS.year); Serial.print("-");
+      Serial.print(GPS.month); Serial.print("-");
+      Serial.print(GPS.day); Serial.print(" ");
       if(GPS.hour < 10){
-        Serial2.print('0');
+        Serial.print('0');
       }
-      Serial2.print(GPS.hour); Serial2.print(':');
+      Serial.print(GPS.hour); Serial.print(':');
       if(GPS.minute < 10){
-        Serial2.print('0');
+        Serial.print('0');
       }
-      Serial2.print(GPS.minute); Serial2.print(':');
+      Serial.print(GPS.minute); Serial.print(':');
       if(GPS.seconds < 10){
-        Serial2.print('0');
+        Serial.print('0');
       }
-      Serial2.print(GPS.seconds); Serial2.print('.');
+      Serial.print(GPS.seconds); Serial.print('.');
       if(GPS.milliseconds < 10){
-        Serial2.print("00");
+        Serial.print("00");
       }
       else if(GPS.milliseconds > 9 && GPS.milliseconds < 100){
-        Serial2.print("0");
+        Serial.print("0");
       }
-      Serial2.print(GPS.milliseconds); dataFile.print(", ");
-      Serial2.print((int)GPS.fix); dataFile.print(", ");
-      Serial2.print((int)GPS.fixquality); dataFile.print(", ");
+      Serial.print(GPS.milliseconds); dataFile.print(", ");
+      Serial.print((int)GPS.fix); dataFile.print(", ");
+      Serial.print((int)GPS.fixquality); dataFile.print(", ");
       if(GPS.fix){
-        Serial2.print(GPS.latitudeDegrees); Serial2.print(GPS.lat); Serial2.print(", ");
-        Serial2.print(GPS.longitudeDegrees); Serial2.print(GPS.lon); Serial2.print(", ");
-        Serial2.print(GPS.speed); Serial2.print(", ");
-        Serial2.print(GPS.angle); Serial2.print(", ");
-        Serial2.print(GPS.altitude); Serial2.print(", ");
-        Serial2.print((int)GPS.satellites); Serial2.print(", ");
-        Serial2.print(GPS.magvariation); Serial2.print(", ");
+        Serial.print(GPS.latitudeDegrees); Serial.print(GPS.lat); Serial.print(", ");
+        Serial.print(GPS.longitudeDegrees); Serial.print(GPS.lon); Serial.print(", ");
+        Serial.print(GPS.speed); Serial.print(", ");
+        Serial.print(GPS.angle); Serial.print(", ");
+        Serial.print(GPS.altitude); Serial.print(", ");
+        Serial.print((int)GPS.satellites); Serial.print(", ");
+        Serial.print(GPS.magvariation); Serial.print(", ");
       }
     }
 
     // BNO055
     bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-    Serial2.print(linearAccelData.acceleration.x); Serial2.print(", ");
-    Serial2.print(linearAccelData.acceleration.y); Serial2.print(", ");
-    Serial2.print(linearAccelData.acceleration.z); Serial2.print(", ");
+    Serial.print(linearAccelData.acceleration.x); Serial.print(", ");
+    Serial.print(linearAccelData.acceleration.y); Serial.print(", ");
+    Serial.print(linearAccelData.acceleration.z); Serial.print(", ");
 
     // ISM 330DLC
     ISM330DLCSensor AccGyr(&Wire);
     AccGyr.Get_X_Axes(accelerometer);
-    Serial2.print(accelerometer[0]); dataFile.print(", ");
-    Serial2.print(accelerometer[1]); dataFile.print(", ");
-    Serial2.print(accelerometer[2]); dataFile.print(", ");
+    Serial.print(accelerometer[0]); dataFile.print(", ");
+    Serial.print(accelerometer[1]); dataFile.print(", ");
+    Serial.print(accelerometer[2]); dataFile.print(", ");
 
     // SCD41
     scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
-    Serial2.print(co2Concentration); Serial2.print(", ");
-    Serial2.print(temperature); Serial2.print(", ");
+    Serial.print(co2Concentration); Serial.print(", ");
+    Serial.print(temperature); Serial.print(", ");
 
     // BMP390
-    Serial2.print(baro.readAltitude(seaLevelPressure)); Serial2.print(", ");
-    Serial2.print(baro.readPressure()); Serial2.print(", ");
-    Serial2.print(baro.readTemperature());
+    Serial.print(baro.readAltitude(seaLevelPressure)); Serial.print(", ");
+    Serial.print(baro.readPressure()); Serial.print(", ");
+    Serial.print(baro.readTemperature());
 
 
     delay(1000);
