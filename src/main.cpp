@@ -42,8 +42,8 @@ int32_t gyroscope[3];
 SensirionI2cScd4x scd41;
 int16_t scd41data;
 uint16_t co2Concentration = 0; 
-int16_t temperature = 0.0;
-int16_t relativeHumidity = 0.0;
+float temperature = 0.0;
+float relativeHumidity = 0.0;
 
 // AS7341 Vars
 Adafruit_AS7341 as7341;
@@ -253,7 +253,7 @@ void loop() {
         toCharArray(gyroscope[2]); dataFile.print(buffer); dataFile.print(", ");
 
         // SCD41
-        scd41data = scd41.readMeasurement(&co2Concentration, &temperature, &relativeHumidity);
+        scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
         toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(temperature); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", ");
@@ -340,7 +340,7 @@ void loop() {
     Serial2.print(accelerometer[2]); dataFile.print(", ");
 
     // SCD41
-    scd41data = scd41.readMeasurement(&co2Concentration, &temperature, &relativeHumidity);
+    scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
     Serial2.print(co2Concentration); Serial2.print(", ");
     Serial2.print(temperature); Serial2.print(", ");
 
