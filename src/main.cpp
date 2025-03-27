@@ -17,47 +17,43 @@
 /* Vars */
 // ---- //
 
-// Logging Vars
+// Logging
 File dataFile; //Instance of the File class
 char buffer[50];
 int floatBuffer[2];
 
-// GPS Vars
+// GPS
 Adafruit_GPS GPS(&Wire);
-// Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
-// Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPSECHO false
-uint32_t timer = millis();
-char c;
 
-// BNO055 Vars
+// BNO055
 Adafruit_BNO055 bno;
 sensors_event_t orientationData, angVelocityData, linearAccelData, magnetometerData, accelerometerData, gravityData;
 float x, y, z; // Variables to store the x, y, z values of the sensor data
 
-// ISM 330DLC Vars
+// ISM 330DLC
 int32_t accelerometer[3];
 int32_t gyroscope[3];
 
+// SCD41
 SensirionI2cScd4x scd41;
 int16_t scd41data;
-uint16_t co2Concentration = 0; 
+uint16_t co2Concentration = 0;
 float temperature = 0.0;
 float relativeHumidity = 0.0;
 
-// AS7341 Vars
+// AS7341
 Adafruit_AS7341 as7341;
 
-// BPM390 Vars
+// BPM390
 Adafruit_BMP3XX baro;
 const float seaLevelPressure = 1013.25;
 
+// --------------------- //
+/* Function Declarations */
+// --------------------- //
 
-// --- //
-/* Functions */
-// -- //
-void printEvent(File &file, sensors_event_t* event); // Function to print the sensor data to the .csv file
 void splitFloat(int buffer[], float in);
+
 void toCharArray(String in);
 void toCharArray(char* in);
 void toCharArray(const char* in);
@@ -69,6 +65,48 @@ void toCharArray(uint16_t in);
 void toCharArray(int8_t in);
 void toCharArray(int32_t in);
 
+// -------------------- //
+/* Function Definitions */
+// -------------------- //
+
+void splitFloat(int buffer[], float in) {
+    buffer[0] = in;
+    buffer[1] = abs(trunc((in - buffer[0]) * 1000));
+}
+
+void toCharArray(String in) {
+    in.toCharArray(buffer, sizeof(buffer));
+}
+void toCharArray(char* in) {
+    sprintf(buffer, in);
+}
+void toCharArray(const char* in) {
+    sprintf(buffer, in);
+}
+void toCharArray(int in) {
+    sprintf(buffer, "%i", in);
+}
+void toCharArray(float in) {
+    splitFloat(floatBuffer, in);
+    sprintf(buffer, "%i.%i", floatBuffer[0], floatBuffer[1]);
+}
+void toCharArray(bool in) {
+    int convertedIn = in;
+    sprintf(buffer, (in ? "true" : "false"));
+}
+void toCharArray(uint8_t in) {
+    sprintf(buffer, "%i", in);
+}
+void toCharArray(uint16_t in) {
+    sprintf(buffer, "%i", in);
+}
+void toCharArray(int8_t in) {
+    sprintf(buffer, "%i", in);
+}
+void toCharArray(int32_t in) {
+    sprintf(buffer, "%i", in);
+}
+
 // ---- //
 /* Main */
 // ---- //
@@ -76,6 +114,8 @@ void toCharArray(int32_t in);
 void setup() {
     Serial.begin(9600);
     Serial.setTimeout(0);
+
+    // SCD 41
     Wire.begin();
     scd41.begin(Wire, SCD41_I2C_ADDR_62);
     int scd41good = scd41.wakeUp();
@@ -85,37 +125,36 @@ void setup() {
     scd41.startPeriodicMeasurement();
 
     // ISM330DLC_ACC_GYRO
-    // An instance can be created and enabled when the I2C bus is used following the procedure below:
     ISM330DLCSensor AccGyr(&Wire);
     AccGyr.begin();
-    AccGyr.Enable_X();  
+    AccGyr.Enable_X();
     AccGyr.Enable_G();
 
     // GPS
     GPS.begin(0x10);
-    // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
     GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
     GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
     GPS.sendCommand(PGCMD_ANTENNA); // Request updates on antenna status, comment out to keep quiet
 
     delay(1000);
-    
+
     GPS.println(PMTK_Q_RELEASE); // Ask for firmware version
 
     // BNO055
-    if(!bno.begin()){
+    if (!bno.begin()) {
         Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
         while(1);
     }
 
     // AS7341
-    if(!as7341.begin()){
+    if (!as7341.begin()) {
         Serial.println("Could not find AS7341");
-        while (1) { delay(10); }
-      }
-      as7341.setATIME(100);
-      as7341.setASTEP(999);
-      as7341.setGain(AS7341_GAIN_256X);
+        while (1) { delay(10); } // @TODO: handle more gracefully
+    }
+
+    as7341.setATIME(100);
+    as7341.setASTEP(999);
+    as7341.setGain(AS7341_GAIN_256X);
 
     // BMP390
     baro.begin_I2C(0x76);
@@ -124,26 +163,28 @@ void setup() {
     baro.setIIRFilterCoeff(BMP3_IIR_FILTER_DISABLE);
     baro.setOutputDataRate(BMP3_ODR_100_HZ);
 
-    /* Logging onto SD */ //https://docs.arduino.cc/learn/programming/sd-guide/
-    // Initialize the SD card //
+    // SD logging
+    // Docs: https://docs.arduino.cc/learn/programming/sd-guide/
     Serial.print("Initializing SD card...");
-    if(!SD.begin(D32)){
+    if (!SD.begin(D32)) {
         Serial.println("Initialization failed!");
         delay(10);
-        while(1);
+        while(1); // @TODO: handle more gracefully
     }
-    // Create a new file with a different name if the file already exists //
+
+    // Create a new file with a different name if the file already exists
     int fileIndex = 1;
     char dataFileName[25] = "flightdata.csv";
 
-    while(SD.exists(dataFileName)){
+    while (SD.exists(dataFileName)) {
         sprintf(dataFileName, "flightdata%d.csv", fileIndex);
         fileIndex++;
     }
+
     // Open the file //
     Serial.println("Initialization successful.");
     dataFile = SD.open(dataFileName, FILE_WRITE);
-    if(dataFile){
+    if (dataFile) {
         Serial.print("Writing to ");
         Serial.println(dataFileName);
 
@@ -156,12 +197,11 @@ void setup() {
         dataFile.println("Altitude, Pressure, Temperature"); // BMP390 Header
 
         Serial.println("File setup complete.");
-    }
-    else{
+    } else{
         Serial.println("Error opening file");
     }
 
-    // Telemetry
+    // Telemetry header
     Serial.print("Millis, ");
     Serial.print("Time, Fix, Quality, Latitude Degrees, Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, "); //GPS Header
     Serial.print("Linear Accel X, Linear Accel Y, Linear Accel Z, "); // BNO055 Header
@@ -171,30 +211,19 @@ void setup() {
 }
 
 void loop() {
-    // ------------------------------- //
-    /* Print the data to the .csv file */
-    // ------------------------------- //
+    // ------------ //
+    /* Data Logging */
+    // ------------ //
 
     if(dataFile){
-        
+        // Millis,
         toCharArray((long)millis()); dataFile.print(buffer); dataFile.print(", ");
 
-        // Parse GPS data (refer to https://adafruit.github.io/Adafruit_GPS/html/class_adafruit___g_p_s.html#a2d3b65036628a65d1e119d3d9a69678c)
-        // if(GPS.available()){
-        //     GPS.read();
-        // }
-
+        // GPS data: Time, Fix, Quality, Latitude Degrees, Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP,
         if(GPS.newNMEAreceived()){
             GPS.parse(GPS.lastNMEA());
-            
-            // if(!GPS.parse(GPS.lastNMEA())){ // this also sets the newNMEAreceived() flag to false
-            //     // return;
-            // }
         }
 
-        // GPS data
-        // Time, Fix, Quality, Latitude Degrees, Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP,
-        // toCharArray("20"); 
         toCharArray(GPS.year); dataFile.print(buffer); dataFile.print("-");
         toCharArray(GPS.month); dataFile.print(buffer); dataFile.print("-");
         toCharArray(GPS.day); dataFile.print(buffer); dataFile.print(" ");
@@ -221,15 +250,14 @@ void loop() {
             dataFile.print(",,,,,,,,,,,");
         }
 
-        // BNO055
-        // Temperature, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z,
+        // BNO055: Temperature, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z,
         bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);            // - VECTOR_EULER         - degrees
         bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);        // - VECTOR_GYROSCOPE     - rad/s
         bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);      // - VECTOR_LINEARACCEL   - m/s^2
         bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);    // - VECTOR_MAGNETOMETER  - uT
         bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);  // - VECTOR_ACCELEROMETER - m/s^2
         bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);              // - VECTOR_GRAVITY       - m/s^2
-        
+
         toCharArray(bno.getTemp()); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.x); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(orientationData.orientation.y); dataFile.print(buffer); dataFile.print(", ");
@@ -255,12 +283,11 @@ void loop() {
         toCharArray(gravityData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
 
-        // ISM 330DLC
-        // Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z,
+        // ISM 330DLC: Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z,
         ISM330DLCSensor AccGyr(&Wire);
         AccGyr.Get_X_Axes(accelerometer);
         AccGyr.Get_G_Axes(gyroscope);
-        
+
         toCharArray(accelerometer[0]); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(accelerometer[1]); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(accelerometer[2]); dataFile.print(buffer); dataFile.print(", ");
@@ -269,16 +296,14 @@ void loop() {
         toCharArray(gyroscope[1]); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(gyroscope[2]); dataFile.print(buffer); dataFile.print(", ");
 
-        // SCD41
-        // CO2 Concentration, Temperature, Relative Humidity,
+        // SCD41: CO2 Concentration, Temperature, Relative Humidity,
         scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
 
         toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(temperature); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", ");
 
-        // AS7341
-        // 415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR,
+        // AS7341: 415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR,
         toCharArray(as7341.getChannel(AS7341_CHANNEL_415nm_F1)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(as7341.getChannel(AS7341_CHANNEL_445nm_F2)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(as7341.getChannel(AS7341_CHANNEL_480nm_F3)); dataFile.print(buffer); dataFile.print(", ");
@@ -287,12 +312,11 @@ void loop() {
         toCharArray(as7341.getChannel(AS7341_CHANNEL_590nm_F6)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(as7341.getChannel(AS7341_CHANNEL_630nm_F7)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(as7341.getChannel(AS7341_CHANNEL_680nm_F8)); dataFile.print(buffer); dataFile.print(", ");
-    
+
         toCharArray(as7341.getChannel(AS7341_CHANNEL_CLEAR)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(as7341.getChannel(AS7341_CHANNEL_NIR)); dataFile.print(buffer); dataFile.print(", ");
 
-        // BMP390
-        // Altitude, Pressure, Temperature
+        // BMP390: Altitude, Pressure, Temperature
         toCharArray(baro.readAltitude(seaLevelPressure)); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(baro.readPressure()); dataFile.print(buffer); dataFile.print(", ");
         toCharArray(baro.readTemperature()); dataFile.print(buffer);
@@ -304,9 +328,9 @@ void loop() {
         Serial.println("Error writing to file");
     }
 
-    // -------------- //
-    /* Send telemetry */
-    // -------------- //
+    // --------- //
+    /* Telemetry */
+    // --------- //
 
     Serial.print(millis()); Serial.print(", ");
 
@@ -365,46 +389,4 @@ void loop() {
     // ----- //
 
     delay(1000);
-}
-
-// ---- //
-/* Functions */
-// ---- //
-
-void splitFloat(int buffer[], float in) {
-  buffer[0] = in;
-  buffer[1] = abs(trunc((in - buffer[0]) * 1000));
-}
-
-void toCharArray(String in) {
-  in.toCharArray(buffer, sizeof(buffer));
-}
-void toCharArray(char* in) {
-  sprintf(buffer, in);
-}
-void toCharArray(const char* in) {
-  sprintf(buffer, in);
-}
-void toCharArray(int in) {
-  sprintf(buffer, "%i", in);
-}
-void toCharArray(float in) {
-  splitFloat(floatBuffer, in);
-  sprintf(buffer, "%i.%i", floatBuffer[0], floatBuffer[1]);
-}
-void toCharArray(bool in) {
-  int convertedIn = in;
-  sprintf(buffer, (in ? "true" : "false"));
-}
-void toCharArray(uint8_t in) {
-  sprintf(buffer, "%i", in);
-}
-void toCharArray(uint16_t in) {
-  sprintf(buffer, "%i", in);
-}
-void toCharArray(int8_t in) {
-  sprintf(buffer, "%i", in);
-}
-void toCharArray(int32_t in) {
-  sprintf(buffer, "%i", in);
 }
