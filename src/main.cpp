@@ -48,6 +48,12 @@ Adafruit_AS7341 as7341;
 Adafruit_BMP3XX baro;
 const float seaLevelPressure = 1013.25;
 
+// LED
+Adafruit_NeoPixel led(1, 8, NEO_RGB); // NeoPixel LED. Remember to use .show() to actually update the LED
+bool ledCurrentlyShowing = false; // If the LED is currently showing. Used to blink the LED
+bool showErrorLed = false; // If the LED should show there is an error
+String errorMsg = ""; // Debug message for why there is an error
+
 // --------------------- //
 /* Function Declarations */
 // --------------------- //
@@ -120,7 +126,8 @@ void setup() {
     scd41.begin(Wire, SCD41_I2C_ADDR_62);
     int scd41good = scd41.wakeUp();
     if (scd41good == 0) {
-        Serial.println("Error waking up the SCD41 sensor.");
+        showErrorLed = true;
+        errorMsg += "Error waking up the SCD41 sensor\n";
     }
     scd41.startPeriodicMeasurement();
 
@@ -142,14 +149,14 @@ void setup() {
 
     // BNO055
     if (!bno.begin()) {
-        Serial.print("There was a problem detecting the BNO055 ... check your wiring or I2C ADDR!");
-        while(1);
+        showErrorLed = true;
+        errorMsg += "There was a problem detecting the BNO055\n";
     }
 
     // AS7341
     if (!as7341.begin()) {
-        Serial.println("Could not find AS7341");
-        while (1) { delay(10); } // @TODO: handle more gracefully
+        showErrorLed = true;
+        errorMsg += "Could not find AS7341\n";
     }
 
     as7341.setATIME(100);
@@ -167,9 +174,8 @@ void setup() {
     // Docs: https://docs.arduino.cc/learn/programming/sd-guide/
     Serial.print("Initializing SD card...");
     if (!SD.begin(D32)) {
-        Serial.println("Initialization failed!");
-        delay(10);
-        while(1); // @TODO: handle more gracefully
+        showErrorLed = true;
+        errorMsg += "SD init failed\n";
     }
 
     // Create a new file with a different name if the file already exists
@@ -198,7 +204,8 @@ void setup() {
 
         Serial.println("File setup complete.");
     } else{
-        Serial.println("Error opening file");
+        showErrorLed = true;
+        errorMsg += "Error opening file\n";
     }
 
     // Telemetry header
@@ -208,6 +215,12 @@ void setup() {
     Serial.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, "); // ISM 330DLC Header
     Serial.print("CO2 Concentration, Temperature, "); // SCD41 Header
     Serial.println("Altitude, Pressure, Temperature"); // BMP390 Header
+
+    // LED
+    led.begin();
+    led.setBrightness(255);
+    led.setPixelColor(0, 255, 255, 255);
+    led.show();
 }
 
 void loop() {
@@ -385,8 +398,24 @@ void loop() {
     Serial.println();
 
     // ----- //
-    // DELAY //
+    // Other //
     // ----- //
+
+    // Blink the LED
+    if (ledCurrentlyShowing) {
+        led.setPixelColor(0, 0, 0, 0);
+    } else {
+        if (showErrorLed) {
+            led.setPixelColor(0, 255, 0, 0);
+
+            Serial.print(errorMsg);
+        } else {
+            led.setPixelColor(0, 0, 0, 255);
+        }
+    }
+
+    led.show();
+    ledCurrentlyShowing = !ledCurrentlyShowing;
 
     delay(1000);
 }
