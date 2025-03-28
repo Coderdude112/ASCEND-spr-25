@@ -417,5 +417,5 @@ void loop() {
     led.show();
     ledCurrentlyShowing = !ledCurrentlyShowing;
 
-    delay(1000);
+    delay(500);
 }
