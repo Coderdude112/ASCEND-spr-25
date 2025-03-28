@@ -125,7 +125,7 @@ void setup() {
     Wire.begin();
     scd41.begin(Wire, SCD41_I2C_ADDR_62);
     int scd41good = scd41.wakeUp();
-    if (scd41good == 0) {
+    if (scd41good != 0) {
         showErrorLed = true;
         errorMsg += "Error waking up the SCD41 sensor\n";
     }
@@ -406,11 +406,11 @@ void loop() {
         led.setPixelColor(0, 0, 0, 0);
     } else {
         if (showErrorLed) {
-            led.setPixelColor(0, 255, 0, 0);
+            led.setPixelColor(0, 0, 0, 255);
 
             Serial.print(errorMsg);
         } else {
-            led.setPixelColor(0, 0, 0, 255);
+            led.setPixelColor(0, 255, 0, 0);
         }
     }
 
