@@ -164,7 +164,7 @@ void setup() {
     as7341.setGain(AS7341_GAIN_256X);
 
     // BMP390
-    baro.begin_I2C(0x76);
+    baro.begin_I2C();
     baro.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
     baro.setPressureOversampling(BMP3_OVERSAMPLING_8X);
     baro.setIIRFilterCoeff(BMP3_IIR_FILTER_DISABLE);
