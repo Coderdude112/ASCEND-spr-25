@@ -195,12 +195,12 @@ void setup() {
         Serial.println(dataFileName);
 
         dataFile.print("Millis,");
-        dataFile.print("Time, Fix, Quality, Latitude Degrees, Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP, "); //GPS Header
-        dataFile.print("Temperature, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z, "); // BNO055 Header
-        dataFile.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z, "); // ISM 330DLC Header
-        dataFile.print("CO2 Concentration, Temperature, Relative Humidity, "); // SCD41 Header
+        dataFile.print("Time, Fix, Quality, Latitude_Degrees, Longitute_Degrees, Speed, Angle, Altitude, Sats, Magnetic_Variation, HDOP, VDOP, PDOP, "); //GPS Header
+        dataFile.print("BNO055_Temperature, Orientation_X, Orientation_Y, Orientation_Z, BNO055_Gyro_X, BNO055_Gyro_Y, BNO055_Gyro_Z, Linear_Accel_X, Linear_Accel_Y, Linear_Accel_Z, Mag_X, Mag_Y, Mag_Z, BNO055_Accel_X, BNO055_Accel_Y, BNO055_Accel_Z,  Accel_Gravity_X, Accel_Gravity_Y, Accel_Gravity_Z, "); // BNO055 Header
+        dataFile.print("ISM330DLC_Accel_X, ISM330DLC_Accel_Y, ISM330DLC_Accel_Z, ISM330DLC_Gyro_X, ISM330DLC_Gyro_Y, ISM330DLC_Gyro_Z, "); // ISM 330DLC Header
+        dataFile.print("CO2_Concentration, SCD41_Temperature, Relative_Humidity, "); // SCD41 Header
         dataFile.print("415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR, "); // AS7341 Header
-        dataFile.println("Altitude, Pressure, Temperature"); // BMP390 Header
+        dataFile.println("Altitude, Pressure, BMP390_Temperature"); // BMP390 Header
 
         Serial.println("File setup complete.");
     } else{
@@ -210,11 +210,11 @@ void setup() {
 
     // Telemetry header
     Serial.print("Millis, ");
-    Serial.print("Time, Fix, Quality, Latitude Degrees, Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, "); //GPS Header
-    Serial.print("Linear Accel X, Linear Accel Y, Linear Accel Z, "); // BNO055 Header
-    Serial.print("Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, "); // ISM 330DLC Header
-    Serial.print("CO2 Concentration, Temperature, "); // SCD41 Header
-    Serial.println("Altitude, Pressure, Temperature"); // BMP390 Header
+    Serial.print("Time, Fix, Quality, Latitude_Degrees, Longitute_Degrees, Speed, Angle, Altitude, Sats, Magnetic_Variation, "); //GPS Header
+    Serial.print("Linear_Accel_X, Linear_Accel_Y, Linear_Accel_Z, "); // BNO055 Header
+    Serial.print("ISM_330DLC_Accel_X, ISM_330DLC_Accel_Y, ISM_330DLC_Accel_Z, "); // ISM 330DLC Header
+    Serial.print("CO2_Concentration, SCD41_Temperature, Relative_Humidity, "); // SCD41 Header
+    Serial.println("Altitude, Pressure, BMP390_Temperature"); // BMP390 Header
 
     // LED
     led.begin();
@@ -229,41 +229,40 @@ void loop() {
     // ------------ //
 
     if(dataFile){
-        // Millis,
-        toCharArray((long)millis()); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray((long)millis()); dataFile.print(buffer); dataFile.print(", "); // Millis
 
-        // GPS data: Time, Fix, Quality, Latitude Degrees, Longitute Degrees, Speed, Angle, Altitude, Sats, Magnetic Variation, HDOP, VDOP, PDOP,
+        // GPS data
         if(GPS.newNMEAreceived()){
             GPS.parse(GPS.lastNMEA());
         }
 
-        toCharArray(GPS.year); dataFile.print(buffer); dataFile.print("-");
-        toCharArray(GPS.month); dataFile.print(buffer); dataFile.print("-");
-        toCharArray(GPS.day); dataFile.print(buffer); dataFile.print(" ");
-        toCharArray(GPS.hour); dataFile.print(buffer); toCharArray(':');
-        toCharArray(GPS.minute); dataFile.print(buffer); toCharArray(':');
-        toCharArray(GPS.seconds); dataFile.print(buffer); toCharArray('.');
-        toCharArray(GPS.milliseconds); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(GPS.year); dataFile.print(buffer); dataFile.print("-"); // Year
+        toCharArray(GPS.month); dataFile.print(buffer); dataFile.print("-"); // Month
+        toCharArray(GPS.day); dataFile.print(buffer); dataFile.print(" "); // Day
+        toCharArray(GPS.hour); dataFile.print(buffer); toCharArray(':'); // Hour
+        toCharArray(GPS.minute); dataFile.print(buffer); toCharArray(':'); // Minute
+        toCharArray(GPS.seconds); dataFile.print(buffer); toCharArray('.'); // Second
+        toCharArray(GPS.milliseconds); dataFile.print(buffer); dataFile.print(", "); // Milliseconds
 
-        toCharArray((int)GPS.fix); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray((int)GPS.fix); dataFile.print(buffer); dataFile.print(", "); // Fix
 
         if (GPS.fix) {
-            toCharArray((int)GPS.fixquality); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.latitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lat); dataFile.print(", ");
-            toCharArray(GPS.longitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lon); dataFile.print(", ");
-            toCharArray(GPS.speed); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.angle); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.altitude); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray((int)GPS.satellites); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.magvariation); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.HDOP); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.VDOP); dataFile.print(buffer); dataFile.print(", ");
-            toCharArray(GPS.PDOP); dataFile.print(buffer); dataFile.print(", ");
+            toCharArray((int)GPS.fixquality); dataFile.print(buffer); dataFile.print(", "); // Quality
+            toCharArray(GPS.latitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lat); dataFile.print(", "); // Latitude_Degrees
+            toCharArray(GPS.longitudeDegrees); dataFile.print(buffer); toCharArray(GPS.lon); dataFile.print(", "); // Longitude_Degrees
+            toCharArray(GPS.speed); dataFile.print(buffer); dataFile.print(", "); // Speed
+            toCharArray(GPS.angle); dataFile.print(buffer); dataFile.print(", "); // Angle
+            toCharArray(GPS.altitude); dataFile.print(buffer); dataFile.print(", "); // Altitude
+            toCharArray((int)GPS.satellites); dataFile.print(buffer); dataFile.print(", "); // Sats
+            toCharArray(GPS.magvariation); dataFile.print(buffer); dataFile.print(", "); // Magnetic_Variation
+            toCharArray(GPS.HDOP); dataFile.print(buffer); dataFile.print(", "); // HDOP
+            toCharArray(GPS.VDOP); dataFile.print(buffer); dataFile.print(", "); // VDOP
+            toCharArray(GPS.PDOP); dataFile.print(buffer); dataFile.print(", "); // PDOP
         } else {
             dataFile.print(",,,,,,,,,,,");
         }
 
-        // BNO055: Temperature, X, Y, Z, Gyro X, Gyro Y, Gyro Z, Linear Accel X, Linear Accel Y, Linear Accel Z, Mag X, Mag Y, Mag Z, Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gravity X, Gravity Y, Gravity Z,
+        // BNO055 Data
         bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);            // - VECTOR_EULER         - degrees
         bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);        // - VECTOR_GYROSCOPE     - rad/s
         bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);      // - VECTOR_LINEARACCEL   - m/s^2
@@ -271,68 +270,68 @@ void loop() {
         bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);  // - VECTOR_ACCELEROMETER - m/s^2
         bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);              // - VECTOR_GRAVITY       - m/s^2
 
-        toCharArray(bno.getTemp()); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(orientationData.orientation.x); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(orientationData.orientation.y); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(orientationData.orientation.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(bno.getTemp()); dataFile.print(buffer); dataFile.print(", "); // BNO055_Temperature
+        toCharArray(orientationData.orientation.x); dataFile.print(buffer); dataFile.print(", "); // Orientation_X
+        toCharArray(orientationData.orientation.y); dataFile.print(buffer); dataFile.print(", "); // Orientation_Y
+        toCharArray(orientationData.orientation.z); dataFile.print(buffer); dataFile.print(", "); // Orientation_Z
 
-        toCharArray(angVelocityData.gyro.x); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(angVelocityData.gyro.y); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(angVelocityData.gyro.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(angVelocityData.gyro.x); dataFile.print(buffer); dataFile.print(", "); // BNO055_Gyro_X
+        toCharArray(angVelocityData.gyro.y); dataFile.print(buffer); dataFile.print(", "); // BNO055_Gyro_Y
+        toCharArray(angVelocityData.gyro.z); dataFile.print(buffer); dataFile.print(", "); // BNO055_Gyro_Z
 
-        toCharArray(linearAccelData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(linearAccelData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(linearAccelData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(linearAccelData.acceleration.x); dataFile.print(buffer); dataFile.print(", "); // Linear_Accel_X
+        toCharArray(linearAccelData.acceleration.y); dataFile.print(buffer); dataFile.print(", "); // Linear_Accel_Y
+        toCharArray(linearAccelData.acceleration.z); dataFile.print(buffer); dataFile.print(", "); // Linear_Accel_Z
 
-        toCharArray(magnetometerData.magnetic.x); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(magnetometerData.magnetic.y); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(magnetometerData.magnetic.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(magnetometerData.magnetic.x); dataFile.print(buffer); dataFile.print(", "); // Mag_X
+        toCharArray(magnetometerData.magnetic.y); dataFile.print(buffer); dataFile.print(", "); // Mag_Y
+        toCharArray(magnetometerData.magnetic.z); dataFile.print(buffer); dataFile.print(", "); // Mag_Z
 
-        toCharArray(accelerometerData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(accelerometerData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(accelerometerData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometerData.acceleration.x); dataFile.print(buffer); dataFile.print(", "); // BNO055_Accel_X
+        toCharArray(accelerometerData.acceleration.y); dataFile.print(buffer); dataFile.print(", "); // BNO055_Accel_Y
+        toCharArray(accelerometerData.acceleration.z); dataFile.print(buffer); dataFile.print(", "); // BNO055_Accel_Z
 
-        toCharArray(gravityData.acceleration.x); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(gravityData.acceleration.y); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gravityData.acceleration.x); dataFile.print(buffer); dataFile.print(", "); // Accel_Gravity_X
+        toCharArray(gravityData.acceleration.y); dataFile.print(buffer); dataFile.print(", "); // Accel_Gravity_Y
+        toCharArray(gravityData.acceleration.z); dataFile.print(buffer); dataFile.print(", "); // Accel_Gravity_Z
 
-        // ISM 330DLC: Accelerometer Accel X, Accelerometer Accel Y, Accelerometer Accel Z, Gyro X, Gyro Y, Gyro Z,
+        // ISM330DLC Data
         ISM330DLCSensor AccGyr(&Wire);
         AccGyr.Get_X_Axes(accelerometer);
         AccGyr.Get_G_Axes(gyroscope);
 
-        toCharArray(accelerometer[0]); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(accelerometer[1]); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(accelerometer[2]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(accelerometer[0]); dataFile.print(buffer); dataFile.print(", "); // ISM330DLC_Accel_X
+        toCharArray(accelerometer[1]); dataFile.print(buffer); dataFile.print(", "); // ISM330DLC_Accel_Y
+        toCharArray(accelerometer[2]); dataFile.print(buffer); dataFile.print(", "); // ISM330DLC_Accel_Z
 
-        toCharArray(gyroscope[0]); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(gyroscope[1]); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(gyroscope[2]); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(gyroscope[0]); dataFile.print(buffer); dataFile.print(", "); // ISM330DLC_Gyro_X
+        toCharArray(gyroscope[1]); dataFile.print(buffer); dataFile.print(", "); // ISM330DLC_Gyro_Y
+        toCharArray(gyroscope[2]); dataFile.print(buffer); dataFile.print(", "); // ISM330DLC_Gyro_Z
 
-        // SCD41: CO2 Concentration, Temperature, Relative Humidity,
+        // SCD41 Data
         scd41data = scd41.readMeasurement(co2Concentration, temperature, relativeHumidity);
 
-        toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(temperature); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(co2Concentration); dataFile.print(buffer); dataFile.print(", "); // CO2_Concentration
+        toCharArray(temperature); dataFile.print(buffer); dataFile.print(", "); // SCD41_Temperature
+        toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", "); // Relative_Humidity
 
-        // AS7341: 415nm, 445nm, 480nm, 515nm, 555nm, 590nm, 630nm, 680nm, Clear, NIR,
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_415nm_F1)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_445nm_F2)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_480nm_F3)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_515nm_F4)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_555nm_F5)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_590nm_F6)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_630nm_F7)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_680nm_F8)); dataFile.print(buffer); dataFile.print(", ");
+        // AS7341 Data
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_415nm_F1)); dataFile.print(buffer); dataFile.print(", "); // 415nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_445nm_F2)); dataFile.print(buffer); dataFile.print(", "); // 445nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_480nm_F3)); dataFile.print(buffer); dataFile.print(", "); // 480nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_515nm_F4)); dataFile.print(buffer); dataFile.print(", "); // 515nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_555nm_F5)); dataFile.print(buffer); dataFile.print(", "); // 555nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_590nm_F6)); dataFile.print(buffer); dataFile.print(", "); // 590nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_630nm_F7)); dataFile.print(buffer); dataFile.print(", "); // 630nm
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_680nm_F8)); dataFile.print(buffer); dataFile.print(", "); // 680nm
 
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_CLEAR)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(as7341.getChannel(AS7341_CHANNEL_NIR)); dataFile.print(buffer); dataFile.print(", ");
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_CLEAR)); dataFile.print(buffer); dataFile.print(", "); // Clear
+        toCharArray(as7341.getChannel(AS7341_CHANNEL_NIR)); dataFile.print(buffer); dataFile.print(", "); // NIR
 
-        // BMP390: Altitude, Pressure, Temperature
-        toCharArray(baro.readAltitude(seaLevelPressure)); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(baro.readPressure()); dataFile.print(buffer); dataFile.print(", ");
-        toCharArray(baro.readTemperature()); dataFile.print(buffer);
+        // BMP390 Data
+        toCharArray(baro.readAltitude(seaLevelPressure)); dataFile.print(buffer); dataFile.print(", "); // Altitude
+        toCharArray(baro.readPressure()); dataFile.print(buffer); dataFile.print(", "); // Pressure
+        toCharArray(baro.readTemperature()); dataFile.print(buffer); // BMP390_Temperature
 
         dataFile.println("");
         dataFile.flush();
