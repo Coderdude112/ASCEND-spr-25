@@ -316,6 +316,8 @@ void loop() {
         toCharArray(relativeHumidity); dataFile.print(buffer); dataFile.print(", "); // Relative_Humidity
 
         // AS7341 Data
+        as7341.readAllChannels();
+
         toCharArray(as7341.getChannel(AS7341_CHANNEL_415nm_F1)); dataFile.print(buffer); dataFile.print(", "); // 415nm
         toCharArray(as7341.getChannel(AS7341_CHANNEL_445nm_F2)); dataFile.print(buffer); dataFile.print(", "); // 445nm
         toCharArray(as7341.getChannel(AS7341_CHANNEL_480nm_F3)); dataFile.print(buffer); dataFile.print(", "); // 480nm
